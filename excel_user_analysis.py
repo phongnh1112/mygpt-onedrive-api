@@ -5,7 +5,6 @@ import pandas as pd
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from typing import Tuple
-import msal
 
 load_dotenv()
 
@@ -18,29 +17,10 @@ SCOPE = ["https://graph.microsoft.com/Files.Read"]
 EXCEL_PATH_ON_ONEDRIVE = "/0.App/KẾT_QUẢ_LUYỆN_TẬP_AI.xlsx"
 
 def get_access_token():
-    try:
-        token = os.getenv("ACCESS_TOKEN")
-        refresh_token = os.getenv("REFRESH_TOKEN")
-
-        if token:
-            test = requests.get(
-                "https://graph.microsoft.com/v1.0/me",
-                headers={"Authorization": f"Bearer {token}"}
-            )
-            if test.status_code == 200:
-                return token
-
-        if refresh_token:
-            app_auth = msal.PublicClientApplication(CLIENT_ID, authority=AUTHORITY)
-            result = app_auth.acquire_token_by_refresh_token(refresh_token, scopes=SCOPE)
-            if "access_token" in result:
-                os.environ["ACCESS_TOKEN"] = result["access_token"]
-                return result["access_token"]
-
-        raise RuntimeError("❌ Token không hợp lệ hoặc không thể làm mới.")
-    except Exception as e:
-        print("❌ Lỗi trong get_access_token():", str(e))
-        raise
+    token = os.getenv("ACCESS_TOKEN")
+    if not token:
+        raise Exception("Không có access token. Hãy cấp token thủ công bằng cách cập nhật vào file .env")
+    return token
 
 def download_excel_graph_api(access_token: str, save_path: str = "data.xlsx") -> str:
     headers = {"Authorization": f"Bearer {access_token}"}
