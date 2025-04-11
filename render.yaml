@@ -2,7 +2,11 @@ services:
   - type: web
     name: mygpt-onedrive-api
     env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn flask_api:app
-    plan: free
-    branch: main
+    envVars:
+      - key: ACCESS_TOKEN
+        value: YOUR_ACCESS_TOKEN_HERE
+      - key: FLASK_APP
+        value: flask_api.py
