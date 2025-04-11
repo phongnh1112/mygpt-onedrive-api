@@ -2,9 +2,7 @@ services:
   - type: web
     name: mygpt-onedrive-api
     env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn excel_user_analysis:app
     plan: free
-    buildCommand: ""
-    startCommand: "gunicorn flask_api:app"
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.10
+    branch: main
