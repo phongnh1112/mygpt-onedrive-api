@@ -10,10 +10,14 @@ AUTHORITY = "https://login.microsoftonline.com/common"
 SCOPE = ["Files.Read"]
 EXCEL_PATH_ON_ONEDRIVE = "/Documents/0.App/KẾT_QUẢ_LUYỆN_TẬP_AI.xlsx"  # Đường dẫn file gốc trong OneDrive cá nhân của bạn
 
-# === Lấy access token Microsoft Graph ===
+# === Lấy access token bằng device code flow (phù hợp môi trường server) ===
 def get_access_token():
     app = msal.PublicClientApplication(CLIENT_ID, authority=AUTHORITY)
-    result = app.acquire_token_interactive(scopes=SCOPE)
+    flow = app.initiate_device_flow(scopes=SCOPE)
+    if "user_code" not in flow:
+        raise Exception("Không khởi tạo được device code flow.")
+    print(f"🔑 Vui lòng truy cập {flow['verification_uri']} và nhập mã: {flow['user_code']}")
+    result = app.acquire_token_by_device_flow(flow)
     if "access_token" in result:
         return result["access_token"]
     else:
