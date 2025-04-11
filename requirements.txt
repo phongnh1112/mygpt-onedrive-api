@@ -1,0 +1,6 @@
+flask
+msal
+pandas
+openpyxl
+requests
+gunicorn
