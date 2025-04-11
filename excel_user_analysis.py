@@ -36,6 +36,8 @@ def analyze_user_learning(path: str, user_code: str) -> Tuple[str, pd.DataFrame]
         return f"Không tìm thấy cột '{col_user}' trong dữ liệu.", pd.DataFrame()
 
     df[col_user] = df[col_user].astype(str).str.strip().str.lower()
+    df = df.dropna(subset=[col_user])  # bỏ dòng không có giá trị mã user
+
     user_df = df[df[col_user] == user_code]
 
     if user_df.empty:
@@ -64,7 +66,8 @@ def home():
 @app.route("/analyze-user", methods=["POST"])
 def analyze_user():
     try:
-        user_code = request.json.get("user_code", "").strip()
+        data = request.get_json(silent=True) or {}
+        user_code = str(data.get("user_code", "")).strip()
         print("🔍 User code nhận được:", user_code)
 
         file_path = download_excel_graph_api(ACCESS_TOKEN)
