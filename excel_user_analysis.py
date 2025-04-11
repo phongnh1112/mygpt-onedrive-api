@@ -1,29 +1,24 @@
 import os
-import msal
 import requests
 import pandas as pd
+from flask import Flask, request, jsonify
+from dotenv import load_dotenv
 from typing import Tuple
 
-# === Thiết lập thông tin truy cập nội bộ ===
-CLIENT_ID = "04f0c124-f2bc-4f3a-83f7-1e29a3b8c6a4"  # Microsoft public client ID
-AUTHORITY = "https://login.microsoftonline.com/common"
-SCOPE = ["Files.Read"]
-EXCEL_PATH_ON_ONEDRIVE = "/Documents/0.App/KẾT_QUẢ_LUYỆN_TẬP_AI.xlsx"  # Đường dẫn file gốc trong OneDrive cá nhân của bạn
+load_dotenv()
 
-# === Lấy access token bằng device code flow (phù hợp môi trường server) ===
+app = Flask(__name__)
+
+EXCEL_PATH_ON_ONEDRIVE = "/Documents/0.App/KẾT_QUẢ_LUYỆN_TẬP_AI.xlsx"
+
+# === Tải access token từ biến môi trường ===
 def get_access_token():
-    app = msal.PublicClientApplication(CLIENT_ID, authority=AUTHORITY)
-    flow = app.initiate_device_flow(scopes=SCOPE)
-    if "user_code" not in flow:
-        raise Exception("Không khởi tạo được device code flow.")
-    print(f"🔑 Vui lòng truy cập {flow['verification_uri']} và nhập mã: {flow['user_code']}")
-    result = app.acquire_token_by_device_flow(flow)
-    if "access_token" in result:
-        return result["access_token"]
-    else:
-        raise Exception("Không lấy được access token.")
+    token = os.getenv("ACCESS_TOKEN")
+    if not token:
+        raise EnvironmentError("⚠️ ACCESS_TOKEN chưa được thiết lập trong biến môi trường.")
+    return token
 
-# === Tải file Excel từ OneDrive cá nhân (Microsoft Graph API) ===
+# === Tải file Excel từ OneDrive ===
 def download_excel_graph_api(access_token: str, save_path: str = "data.xlsx") -> str:
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://graph.microsoft.com/v1.0/me/drive/root:{EXCEL_PATH_ON_ONEDRIVE}:/content"
@@ -33,12 +28,11 @@ def download_excel_graph_api(access_token: str, save_path: str = "data.xlsx") ->
         f.write(response.content)
     return save_path
 
-# === Phân tích dữ liệu user từ file Excel ===
+# === Phân tích dữ liệu người dùng ===
 def analyze_user_learning(path: str, user_code: str) -> Tuple[str, pd.DataFrame]:
     df = pd.read_excel(path, engine='openpyxl')
     df.columns = df.columns.str.strip()
-
-    user_df = df[df[df.columns[5]] == user_code]  # Cột F: User
+    user_df = df[df[df.columns[5]] == user_code]  # Cột F
     if user_df.empty:
         return f"Không tìm thấy dữ liệu cho user '{user_code}'", pd.DataFrame()
 
@@ -57,13 +51,17 @@ def analyze_user_learning(path: str, user_code: str) -> Tuple[str, pd.DataFrame]
     analysis.append(suggestion)
     return "\n".join(analysis), user_df
 
-# === Chạy thử ===
-if __name__ == "__main__":
+@app.route("/")
+def home():
+    return "✅ API đang hoạt động. Dùng POST /analyze-user với user_code để phân tích."
+
+@app.route("/analyze-user", methods=["POST"])
+def analyze_user():
+    user_code = request.json.get("user_code")
     token = get_access_token()
     file_path = download_excel_graph_api(token)
+    summary, _ = analyze_user_learning(file_path, user_code)
+    return jsonify({"result": summary})
 
-    user_input = "phongnh9"
-    summary, user_data = analyze_user_learning(file_path, user_input)
-
-    print(summary)
-    print(user_data)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
