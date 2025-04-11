@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
-from excel_user_analysis import get_access_token, download_excel_graph_api, analyze_user_learning
+from excel_user_analysis import download_excel_graph_api, analyze_user_learning
+import os
 
 app = Flask(__name__)
 
@@ -13,7 +14,10 @@ def analyze_user():
         user_code = request.json.get("user_code")
         print("🔍 User code nhận được:", user_code)
 
-        access_token = get_access_token()
+        access_token = os.getenv("ACCESS_TOKEN")
+        if not access_token:
+            raise Exception("ACCESS_TOKEN không tồn tại trong môi trường!")
+
         file_path = download_excel_graph_api(access_token)
         print("📁 File tải về:", file_path)
 
