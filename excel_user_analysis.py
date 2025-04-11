@@ -10,17 +10,11 @@ load_dotenv()
 
 app = Flask(__name__)
 
-CLIENT_ID = "2bdb3693-4837-4cc6-9f60-ea3858985b16"
-TENANT_ID = "e5039572-eed3-431f-92a3-6c3dd04c34fb"
-AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
-SCOPE = ["https://graph.microsoft.com/Files.Read"]
 EXCEL_PATH_ON_ONEDRIVE = "/0.App/KẾT_QUẢ_LUYỆN_TẬP_AI.xlsx"
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 
-def get_access_token():
-    token = os.getenv("ACCESS_TOKEN")
-    if not token:
-        raise Exception("Không có access token. Hãy cấp token thủ công bằng cách cập nhật vào file .env")
-    return token
+if not ACCESS_TOKEN:
+    raise Exception("Không tìm thấy ACCESS_TOKEN. Vui lòng cập nhật vào file .env hoặc biến môi trường trên Render.")
 
 def download_excel_graph_api(access_token: str, save_path: str = "data.xlsx") -> str:
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -63,10 +57,7 @@ def analyze_user():
         user_code = request.json.get("user_code")
         print("🔍 User code nhận được:", user_code)
 
-        token = get_access_token()
-        print("🔐 Token lấy được:", token[:20], "...")
-
-        file_path = download_excel_graph_api(token)
+        file_path = download_excel_graph_api(ACCESS_TOKEN)
         print("📁 File tải về:", file_path)
 
         summary, _ = analyze_user_learning(file_path, user_code)
