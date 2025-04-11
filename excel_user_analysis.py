@@ -12,14 +12,37 @@ app = Flask(__name__)
 
 EXCEL_PATH_ON_ONEDRIVE = "/0.App/KẾT_QUẢ_LUYỆN_TẬP_AI.xlsx"
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+REFRESH_TOKEN = os.getenv("REFRESH_TOKEN")
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+TENANT_ID = os.getenv("TENANT_ID")
 
-if not ACCESS_TOKEN:
-    raise Exception("Không tìm thấy ACCESS_TOKEN. Vui lòng cập nhật vào file .env hoặc biến môi trường trên Render.")
+def refresh_access_token() -> str:
+    url = f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token"
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    data = {
+        'client_id': CLIENT_ID,
+        'client_secret': CLIENT_SECRET,
+        'grant_type': 'refresh_token',
+        'refresh_token': REFRESH_TOKEN,
+        'scope': 'https://graph.microsoft.com/.default'
+    }
+    response = requests.post(url, data=data, headers=headers)
+    response.raise_for_status()
+    new_token = response.json()["access_token"]
+    os.environ["ACCESS_TOKEN"] = new_token
+    return new_token
 
 def download_excel_graph_api(access_token: str, save_path: str = "data.xlsx") -> str:
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://graph.microsoft.com/v1.0/me/drive/root:{EXCEL_PATH_ON_ONEDRIVE}:/content"
     response = requests.get(url, headers=headers)
+
+    if response.status_code == 401:
+        access_token = refresh_access_token()
+        headers["Authorization"] = f"Bearer {access_token}"
+        response = requests.get(url, headers=headers)
+
     response.raise_for_status()
     with open(save_path, "wb") as f:
         f.write(response.content)
@@ -75,7 +98,7 @@ def analyze_user():
         user_code = user_code.strip().lower()
         print("🔍 User code nhận được:", user_code)
 
-        file_path = download_excel_graph_api(ACCESS_TOKEN)
+        file_path = download_excel_graph_api(os.getenv("ACCESS_TOKEN"))
         print("📁 File tải về:", file_path)
 
         summary, _ = analyze_user_learning(file_path, user_code)
