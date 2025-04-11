@@ -28,16 +28,26 @@ def download_excel_graph_api(access_token: str, save_path: str = "data.xlsx") ->
 def analyze_user_learning(path: str, user_code: str) -> Tuple[str, pd.DataFrame]:
     df = pd.read_excel(path, engine='openpyxl')
     df.columns = df.columns.str.strip()
-    user_df = df[df[df.columns[5]] == user_code]
+
+    user_code = user_code.strip().lower()
+    col_user = "User của bạn là?"
+
+    if col_user not in df.columns:
+        return f"Không tìm thấy cột '{col_user}' trong dữ liệu.", pd.DataFrame()
+
+    df[col_user] = df[col_user].astype(str).str.strip().str.lower()
+    user_df = df[df[col_user] == user_code]
+
     if user_df.empty:
         return f"Không tìm thấy dữ liệu cho user '{user_code}'", pd.DataFrame()
 
-    user_df = user_df[[df.columns[2], df.columns[6], df.columns[7]]]
+    user_df = user_df[["Completion time", "Bài luyện tập hôm nay của bạn là?", "Kết quả bài luyện tập là?"]]
     user_df.columns = ['Completion Time', 'Practice Today', 'Result']
 
     analysis = [f"🔎 Phân tích cho user: {user_code}\n"]
     for _, row in user_df.iterrows():
-        analysis.append(f"- 📅 {row['Completion Time'].strftime('%d/%m/%Y %H:%M')}: luyện \"{row['Practice Today']}\" → kết quả: \"{row['Result']}\"")
+        time_fmt = row['Completion Time'].strftime('%d/%m/%Y %H:%M') if not pd.isnull(row['Completion Time']) else "Không rõ thời gian"
+        analysis.append(f"- 📅 {time_fmt}: luyện \"{row['Practice Today']}\" → kết quả: \"{row['Result']}\"")
 
     if any('không' in str(x).lower() or 'chưa' in str(x).lower() or 'chịu' in str(x).lower() for x in user_df['Result']):
         suggestion = "📌 Gợi ý: Nên ôn lại bài tập cũ hoặc bắt đầu từ kiến thức nền tảng."
@@ -54,7 +64,7 @@ def home():
 @app.route("/analyze-user", methods=["POST"])
 def analyze_user():
     try:
-        user_code = request.json.get("user_code")
+        user_code = request.json.get("user_code", "").strip()
         print("🔍 User code nhận được:", user_code)
 
         file_path = download_excel_graph_api(ACCESS_TOKEN)
