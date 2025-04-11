@@ -1,0 +1,29 @@
+{
+  "name": "Phân tích học tập từ Excel nội bộ",
+  "description": "GPT gọi API Render để phân tích kết quả học tập AI từ file Excel nội bộ OneDrive của bạn.",
+  "servers": [
+    {
+      "url": "https://mygpt-onedrive-api.onrender.com"
+    }
+  ],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "user_code": {
+        "type": "string",
+        "description": "Mã người dùng nội bộ, ví dụ: phongnh9"
+      }
+    },
+    "required": ["user_code"]
+  },
+  "handler": {
+    "url": "https://mygpt-onedrive-api.onrender.com/analyze-user",
+    "method": "POST",
+    "auth": {
+      "type": "none"
+    },
+    "body": {
+      "user_code": "{{user_code}}"
+    }
+  }
+}
