@@ -8,7 +8,35 @@
   ],
   "privacy_policy_url": "https://example.com/privacy",
   "parameters": {
-    ...
+    "user_code": {
+      "type": "string",
+      "description": "Mã học viên cần phân tích bài làm.",
+      "required": true
+    }
   },
-  ...
+  "handler": {
+    "method": "POST",
+    "path": "/analyze-user",
+    "request_body": {
+      "content": {
+        "application/json": {
+          "example": {
+            "user_code": "phongnh9"
+          }
+        }
+      }
+    },
+    "response": {
+      "content": {
+        "application/json": {
+          "example": {
+            "result": "📊 Phân tích cho user: phongnh9..."
+          }
+        }
+      }
+    }
+  },
+  "auth": {
+    "type": "none"
+  }
 }
