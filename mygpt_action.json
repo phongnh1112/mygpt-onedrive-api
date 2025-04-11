@@ -6,24 +6,9 @@
       "url": "https://mygpt-onedrive-api.onrender.com"
     }
   ],
+  "privacy_policy_url": "https://example.com/privacy",
   "parameters": {
-    "type": "object",
-    "properties": {
-      "user_code": {
-        "type": "string",
-        "description": "Mã người dùng nội bộ, ví dụ: phongnh9"
-      }
-    },
-    "required": ["user_code"]
+    ...
   },
-  "handler": {
-    "url": "https://mygpt-onedrive-api.onrender.com/analyze-user",
-    "method": "POST",
-    "auth": {
-      "type": "none"
-    },
-    "body": {
-      "user_code": "{{user_code}}"
-    }
-  }
+  ...
 }
