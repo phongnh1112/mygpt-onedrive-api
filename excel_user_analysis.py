@@ -1,22 +1,44 @@
 import os
+import json
 import requests
 import pandas as pd
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from typing import Tuple
+import msal
 
 load_dotenv()
 
 app = Flask(__name__)
 
+CLIENT_ID = "2bdb3693-4837-4cc6-9f60-ea3858985b16"
+TENANT_ID = "e5039572-eed3-431f-92a3-6c3dd04c34fb"
+AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+SCOPE = ["Files.Read", "offline_access"]
 EXCEL_PATH_ON_ONEDRIVE = "/Documents/0.App/KẾT_QUẢ_LUYỆN_TẬP_AI.xlsx"
 
-# === Tải access token từ biến môi trường ===
+# === Tự động lấy access_token, ưu tiên làm mới từ refresh_token ===
 def get_access_token():
     token = os.getenv("ACCESS_TOKEN")
-    if not token:
-        raise EnvironmentError("⚠️ ACCESS_TOKEN chưa được thiết lập trong biến môi trường.")
-    return token
+    refresh_token = os.getenv("REFRESH_TOKEN")
+
+    if token:
+        test = requests.get(
+            "https://graph.microsoft.com/v1.0/me",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        if test.status_code == 200:
+            return token
+
+    if refresh_token:
+        app_auth = msal.PublicClientApplication(CLIENT_ID, authority=AUTHORITY)
+        result = app_auth.acquire_token_by_refresh_token(refresh_token, scopes=SCOPE)
+        if "access_token" in result:
+            # Ghi lại token mới ra file .env (nếu cần)
+            os.environ["ACCESS_TOKEN"] = result["access_token"]
+            return result["access_token"]
+
+    raise EnvironmentError("⚠️ Token không hợp lệ và không làm mới được từ REFRESH_TOKEN.")
 
 # === Tải file Excel từ OneDrive ===
 def download_excel_graph_api(access_token: str, save_path: str = "data.xlsx") -> str:
